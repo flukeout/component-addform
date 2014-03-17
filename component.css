@@ -1,0 +1,135 @@
+:host {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+
+:host #form-wrapper {
+  padding: 10px;
+}
+
+:host h1 {
+  font-size: 18px;
+  border-bottom: solid 2px #CCC;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  text-shadow: 0px 1px 0px white;
+}
+
+:host input {
+  padding: 5px 3px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+:host input[type=text]{
+  width: 90%
+}
+
+:host label {
+  display: block;
+}
+
+:host p {
+  color: white;
+  background: green;
+  cursor: pointer;
+  padding: 5px 10px;
+  display: inline-block;
+}
+
+:host .input-wrapper {
+  position: relative;
+  margin-bottom: 5px;
+}
+
+
+:host .input-wrapper .delete-item {
+  display: inline-block;
+  background: #BBB;
+  -webkit-border-radius: 15px;
+  color: white;
+  cursor: pointer;
+  padding: 3px 7px;
+  float: right;
+  position: absolute;
+  top: calc(50% - 15px);
+  right: 0px;
+}
+
+:host .button {
+  background: green;
+  text-align: center;
+  padding: 5px 10px;
+  color: white;
+  cursor: pointer;
+  margin: 4px 0;
+}
+
+:host #add-input-view {
+  background: #EEE;
+  border-bottom: solid 1px #CCC ;
+  padding: 10px;
+}
+
+:host #add-input-view h2 {
+  cursor: pointer;
+}
+
+:host #add-input-view h2 {
+  font-size: 15px;
+  margin-bottom: 10px;
+  font-weight: normal;
+  color: #777;
+  line-height: 15px;
+}
+
+:host #add-input-view[show=no] h2 {
+  margin-bottom: 0;
+}
+
+:host #add-input-view[show=no] .input-type {
+  display: none;
+}
+
+
+:host .input-types {
+  display: block;
+  overflow: auto;
+}
+
+:host .input-types h4 {
+  float: left;
+  text-transform: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  color: #777;
+  border: none;
+  padding-right: 8px;
+  font-weight: normal;
+  position: relative;
+  top: 1px;
+}
+
+:host .input-type {
+  cursor: pointer;
+  margin-right: 5px;
+  padding: 4px 10px 6px 10px;
+  background: #FFF;
+  float: left;
+  -webkit-border-radius: 4px;
+  border-bottom: solid 1px #CCC;
+
+}
+
+:host .input-type:last-child {
+  margin-bottom: 0px;
+}
+
+:host #datascope {
+  text-align: center;
+  padding-bottom: 5px;
+}

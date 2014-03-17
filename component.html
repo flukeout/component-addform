@@ -1,0 +1,285 @@
+<polymer-element name="ceci-addform" attributes="resetonsubmit validatecontent dataname datascope" dataname="Items" extends="ceci-element">
+  <template>
+    <link rel="stylesheet" href="component.css">
+    <div id="datascope"></div>
+    <div id="add-input-view">
+      <div on-click="{{addInputClick}}" class="input-types">
+        <h4>Add</h4>
+        <div class="input-type" type="ceci-form-text-input">Text</div>
+        <div class="input-type" type="ceci-form-checkbox" >Checkbox</div>
+        <div class="input-type" type="ceci-form-range" >Slider</div>
+        <div class="input-type" type="ceci-stars-component" >Rating</div>
+      </div>
+    </div>
+    <div id="form-wrapper" class="form"></div>
+    <shadow></shadow>
+    <script type="text/json" id="ceci-definition">
+      {
+        "thumbnail": "./thumbnail.png",
+        "name": "Add Form",
+        "description": "Create forms and save data to a database.",
+        "broadcasts": {
+        },
+        "listeners": {
+          "saveData": {
+            "description": "Submit this form and saves the data a record.",
+            "label": "Submit Form",
+            "default" : true
+          },
+          "setScope": {
+            "description": "Specifies what record to save the data to.",
+            "label": "Set Save Scope"
+          }
+        },
+        "attributes": {
+          "dataname": {
+            "description": "This form will create this item, ie.. 'Cats'",
+            "label": "I create...",
+            "editable": "text"
+          },
+          "resetonsubmit": {
+            "description": "Clear the form fields after submitting",
+            "label": "Reset fields on submit",
+            "editable": "boolean"
+          },
+          "validatecontent": {
+            "description": "Prevents the form from submitting without data",
+            "label": "Prevent submitting empty form",
+            "editable": "boolean"
+          }
+        }
+      }
+    </script>
+  </template>
+    <script>
+      Polymer("ceci-addform", {
+        ready: function(){
+          this.super();
+          this.datascope = [];
+          var self = this;
+          window.addEventListener("CeciAppSaveAs", function(){
+            self.saveData();
+          });
+          // this.$.addInputs.innerHTML = this.gettext(this.localName + "/addInputs") || this.$.addInputs.innerHTML;
+          // this.$.textInput.innerHTML = this.gettext(this.localName + "/textInput") || this.$.textInput.innerHTML;
+          this.initialBuildForm = false;
+          this.buildForm();
+        },
+        toggleInputMenu: function(){
+          //Toggles the menu at the top of the form used for adding iputs
+          var menu = this.shadowRoot.querySelector("#add-input-view");
+          var state = menu.getAttribute("show");
+          if(state == "yes") {
+            menu.setAttribute("show","no");
+          } else {
+            menu.setAttribute("show","yes");
+          }
+        },
+        setScope : function(e){
+          this.datascope = e;
+        },
+        datascopeChanged : function(){
+          var scopeEl = this.shadowRoot.querySelector("#datascope");
+          var scopeString = "Adding to ";
+          if(this.datascope.length > 0) {
+            scopeEl.style.display = "block";
+            for(var i = 0; i < this.datascope.length; i++) {
+              scopeString = scopeString + this.datascope[i].dataset;
+            }
+          } else {
+            scopeEl.style.display = "none";
+          }
+          scopeEl.style.display = "none";
+        },
+        addInputClick : function(e){
+          var type = e.target.getAttribute("type");
+          this.addInput(type);
+        },
+        datanameChanged : function(){
+          //handle the case where the dataname is in the process of changing or has changed
+          //but doesn't have any input forms yet, so nothing needs to be saved
+          this.updateSchema();
+        },
+        resetForm: function(){
+          var fields = this.shadowRoot.querySelectorAll(".form input");
+          for (var field in fields) {
+            if (fields.hasOwnProperty(field)) {
+              var f = fields[field];
+              f.value = "";
+            }
+          }
+        },
+        addInput: function(type,name){
+          var self = this;
+          var input = document.createElement(type);
+          input.inputname = name || "Unnamed";
+          this.shadowRoot.querySelector("#form-wrapper").appendChild(input);
+
+          var deleteMe = document.createElement("div");
+          deleteMe.classList.add("delete-item");
+          input.appendChild(deleteMe);
+
+          input.addEventListener("inputnameChanged", function(e){
+            self.updateSchema();
+          });
+
+          window.addEventListener("component-deleted", function(e){
+            self.updateSchema();
+          });
+
+          this.updateSchema();
+        },
+        attached : function(){
+          var formWrapper = this.shadowRoot.querySelector("#form-wrapper");
+          var self = this;
+          setTimeout(function(){
+            $(formWrapper).sortable({
+              distance: 10,
+              handle : ".handle",
+              stop : function(){
+                self.updateSchema();
+              }
+            });
+          },10);
+          this.super();
+        },
+        deleteItem : function(e){
+          var item = e.target.parentNode;
+          item.parentNode.removeChild(item);
+          this.updateSchema();
+        },
+        buildForm: function(){
+          //Builds out the remembered form fields
+          var self = this;
+          this.checkFirebase(function(ceciApp){
+            ceciApp.getFirebaseObject('form-data',"", function(data){
+              var db = data || {};
+              var fields = db[self.dataname + "_formschema"] || [];
+              for (var index in fields) {
+                if (fields.hasOwnProperty(index)) {
+                  var field = fields[index];
+                  self.addInput(field["type"],field["name"]);
+                }
+              }
+              self.initialBuildForm = true;
+            });
+          });
+        },
+        checkFirebase: function(callback){
+          var ca = document.querySelector("ceci-app");
+          if(!ca){
+            var self = this;
+            window.addEventListener("CeciDataConnectionLoaded", function(e){
+              self.ca = document.querySelector("ceci-app");
+              callback(self.ca);
+            });
+          } else {
+            if(ca.firebase){
+              callback(ca);
+            } else {
+              //ceci-app available but firebase not up yet
+              window.addEventListener("CeciDataConnectionLoaded", function(e){
+                var ca = document.querySelector("ceci-app");
+                callback(ca);
+              });
+            }
+          }
+        },
+        updateSchema : function(){
+
+          // if(this.initialBuildForm){
+
+            //Check what inputs there are, and build a schema file of them,
+            // so that when the component loads next time, it builds out the correct form
+            var schema = [];
+
+            //Builds a schema file based on the fields in the form,
+            // should be triggered on load and on add / remove of fields
+            var fields = this.shadowRoot.querySelectorAll(".form > *");
+
+            for (var field in fields) {
+              if (fields.hasOwnProperty(field)) {
+                var fieldSchema = {}
+                var f = fields[field];
+                var name = f.getAttribute("inputname");
+                var name = f.inputname;
+                var type = f.nodeName;
+                fieldSchema["name"] = name;
+                fieldSchema["type"] = type;
+                schema.push(fieldSchema);
+
+              }
+            }
+
+
+            // Saves the form schema to the DB
+            var keyname = this.dataname + "_formschema";
+
+            this.checkFirebase(function(ca){
+              var that = self;
+              ca.getFirebaseObject('form-data',"", function(data){
+                var db = data || {};
+                db[keyname] = schema;
+                var ca = document.querySelector("ceci-app")
+                ca.setFirebaseObject('form-data', db);
+                var event = new CustomEvent("formChange");
+                window.dispatchEvent(event);
+              });
+            });
+
+        },
+        saveData : function(){
+          var self = this;
+          var hasData = true;
+
+          this.checkFirebase(function(ca){
+            var that = self;
+            ca.getFirebaseObject('form-data',"", function(data){
+              var db = data || {};
+
+              var addTo = db;
+
+              for (var i = 0; i < that.datascope.length; i++){
+                var scopeItem = that.datascope[i];
+                addTo = addTo[scopeItem["dataset"]][scopeItem["index"]];
+              }
+
+              if (addTo[that.dataname] === undefined){
+                addTo[that.dataname] = [];
+              }
+
+              var newData = {};
+              var fields = that.shadowRoot.querySelectorAll(".form > *");
+
+              for (var field in fields) {
+                if (fields.hasOwnProperty(field)) {
+                  var f = fields[field];
+                  var name = f.inputname;
+                  var value = f.value;
+                  newData[name] = value;
+                }
+              }
+
+              addTo[that.dataname].push(newData);
+
+              if(that.resetonsubmit == "true"){
+                that.resetForm();
+              }
+
+              if(that.validatecontent == "true" && hasData == false) {
+
+              //Don't submit if
+              } else {
+                var ca = document.querySelector("ceci-app")
+                ca.setFirebaseObject('form-data', db);
+                //Stoage event!
+                var event = new CustomEvent("storage");
+                window.dispatchEvent(event);
+              }
+
+            });
+          });
+        }
+      });
+    </script>
+</polymer-element>
